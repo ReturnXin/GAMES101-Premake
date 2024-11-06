@@ -61,10 +61,12 @@ bool Scene::trace(
 Vector3f Scene::castRay(const Ray &ray, int depth) const
 {
     // TO DO Implement Path Tracing Algorithm here
-    Vector3f hitColor = this->backgroundColor;
+    Vector3f hitColor = Vector3f(0.0, 0.0, 0.0);
     Intersection shade_point_inter = Scene::intersect(ray);
 
     if (shade_point_inter.happened) {
+        if (shade_point_inter.m->hasEmission()) return shade_point_inter.m->getEmission();
+
         Vector3f p = shade_point_inter.coords;
         Vector3f N = shade_point_inter.normal;
         Vector3f wo = ray.direction;
@@ -99,9 +101,8 @@ Vector3f Scene::castRay(const Ray &ray, int depth) const
             if (bounce_point_inter.happened && !bounce_point_inter.m->hasEmission()) {
                 float pdf = shade_point_inter.m->pdf(wo, wi, N);
                 if (pdf > EPSILON) {
-                    L_indir = castRay(ray_pTowi, depth + 1) * shade_point_inter.m->eval(wo, wi, N) * dotProduct(wo, N) / pdf / RussianRoulette;
+                    L_indir = castRay(ray_pTowi, depth + 1) * shade_point_inter.m->eval(wo, wi, N) * dotProduct(wi, N) / pdf / RussianRoulette;
                 }
-                
             }
         }
 
