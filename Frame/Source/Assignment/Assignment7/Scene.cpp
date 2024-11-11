@@ -65,8 +65,6 @@ Vector3f Scene::castRay(const Ray &ray, int depth) const
     Intersection shade_point_inter = Scene::intersect(ray);
 
     if (shade_point_inter.happened) {
-        if (shade_point_inter.m->hasEmission()) return shade_point_inter.m->getEmission();
-
         Vector3f p = shade_point_inter.coords;
         Vector3f N = shade_point_inter.normal;
         Vector3f wo = ray.direction;
@@ -105,8 +103,12 @@ Vector3f Scene::castRay(const Ray &ray, int depth) const
                 }
             }
         }
-
-        hitColor = L_dir + L_indir;
+        Vector3f wi = normalize(shade_point_inter.m->sample(wo, N));
+        hitColor = shade_point_inter.m->getEmission() + L_dir + L_indir;
+        hitColor.x = (clamp(0, 1, hitColor.x));
+        hitColor.y = (clamp(0, 1, hitColor.y));
+        hitColor.z = (clamp(0, 1, hitColor.z));
+        // hitColor = shade_point_inter.m->eval(wo, wi, N);
     }
     return hitColor;
 }

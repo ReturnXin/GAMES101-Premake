@@ -16,7 +16,7 @@ int main(int argc, char** argv)
 {
 
     // Change the definition here to change resolution
-    Scene scene(512, 512);
+    Scene scene(200, 200);
 
     Material* red = new Material(DIFFUSE, Vector3f(0.0f));
     red->Kd = Vector3f(0.63f, 0.065f, 0.05f);
@@ -28,19 +28,27 @@ int main(int argc, char** argv)
     light->Kd = Vector3f(0.65f);
 
     MeshTriangle floor(Utils::PathFromAsset("model/cornellbox/floor.obj"), white);
-    MeshTriangle shortbox(Utils::PathFromAsset("model/cornellbox/shortbox.obj"), white);
-    MeshTriangle tallbox(Utils::PathFromAsset("model/cornellbox/tallbox.obj"), white);
+    //MeshTriangle shortbox(Utils::PathFromAsset("model/cornellbox/shortbox.obj"), white);
+    //MeshTriangle tallbox(Utils::PathFromAsset("model/cornellbox/tallbox.obj"), white);
     MeshTriangle left(Utils::PathFromAsset("model/cornellbox/left.obj"), red);
     MeshTriangle right(Utils::PathFromAsset("model/cornellbox/right.obj"), green);
     MeshTriangle light_(Utils::PathFromAsset("model/cornellbox/light.obj"), light);
 
+    Material* microfacet = new Material(MICROFACET, Vector3f(0.0f));
+    microfacet->Ks = Vector3f(0.45, 0.45, 0.45);
+    microfacet->Kd = Vector3f(1.0, 1.0, 1.0);
+    microfacet->ior = 12.85;
+    MeshTriangle shortbox(Utils::PathFromAsset("model/cornellbox/shortbox.obj"), white);
+    MeshTriangle tallbox(Utils::PathFromAsset("model/cornellbox/tallbox.obj"), microfacet);
+    Sphere shphere1(Vector3f(150, 100, 200), 100, microfacet);
+
     scene.Add(&floor);
-    scene.Add(&shortbox);
+    scene.Add(&shphere1);
     scene.Add(&tallbox);
     scene.Add(&left);
     scene.Add(&right);
     scene.Add(&light_);
-
+    
     scene.buildBVH();
 
     Renderer r;

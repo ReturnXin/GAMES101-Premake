@@ -7,7 +7,7 @@
 
 #include "Vector.hpp"
 
-enum MaterialType { DIFFUSE};
+enum MaterialType { DIFFUSE, MICROFACET};
 
 class Material{
 private:
@@ -142,12 +142,32 @@ Vector3f Material::sample(const Vector3f &wi, const Vector3f &N){
             
             break;
         }
+        case MICROFACET:
+        {
+            // uniform sample on the hemisphere
+            float x_1 = get_random_float(), x_2 = get_random_float();
+            float z = std::fabs(1.0f - 2.0f * x_1);
+            float r = std::sqrt(1.0f - z * z), phi = 2 * M_PI * x_2;
+            Vector3f localRay(r * std::cos(phi), r * std::sin(phi), z);
+            return toWorld(localRay, N);
+
+            break;
+        }
     }
 }
 
 float Material::pdf(const Vector3f &wi, const Vector3f &wo, const Vector3f &N){
     switch(m_type){
         case DIFFUSE:
+        {
+            // uniform sample probability 1 / (2 * PI)
+            if (dotProduct(wo, N) > 0.0f)
+                return 0.5f / M_PI;
+            else
+                return 0.0f;
+            break;
+        }
+        case MICROFACET:
         {
             // uniform sample probability 1 / (2 * PI)
             if (dotProduct(wo, N) > 0.0f)
@@ -172,6 +192,52 @@ Vector3f Material::eval(const Vector3f &wi, const Vector3f &wo, const Vector3f &
             else
                 return Vector3f(0.0f);
             break;
+        }
+        case MICROFACET:
+        {
+            float cosalpha = dotProduct(N, wo);
+            if (cosalpha > 0.0f)
+            {
+                float D, F, G;
+
+                fresnel(wi, N, ior, F);
+
+                float roughness = 0.1f;
+                auto G_Function = [&](const float& roughness, const Vector3f& wi, const Vector3f& wo, const Vector3f& N) {
+                    float A_wi, A_wo;
+                    A_wi = (-1 + sqrt(1 + roughness * roughness * pow(tan(acos(dotProduct(wi, N))), 2))) / 2;
+                    A_wo = (-1 + sqrt(1 + roughness * roughness * pow(tan(acos(dotProduct(wo, N))), 2))) / 2;
+                    float divisor = A_wi + A_wo;
+                    if (divisor < 0.001)
+                        return 1.f;
+                    else
+                        return 1.0f / divisor;
+                    };
+                G = G_Function(roughness, -wi, wo, N);
+
+                auto D_Function = [&](const float& roughness, const Vector3f& h, const Vector3f& N) {
+                    float cosThelta = dotProduct(h, N);
+                    float divisor = M_PI * pow(cosThelta * cosThelta * (roughness * roughness - 1) + 1, 2);
+                    if (divisor < 0.001)
+                        return 1.f;
+                    else return roughness * roughness / divisor;
+                    };
+                Vector3f h = normalize(-wi + wo);
+                D = D_Function(roughness, h, N);
+
+                Vector3f diffuse = (Vector3f(1.0f) - F) * Kd / M_PI;
+                Vector3f specular;
+                float divisor;
+                divisor = 4 * dotProduct(wo, N) * dotProduct(-wi, N);
+                if (divisor < 0.001)
+                    specular = Vector3f(1.0f);
+                else
+                    specular = D * F * G / divisor;
+                
+                Vector3f result = diffuse + specular;
+                return result;
+            }
+            else return Vector3f(0.0, 0.0, 0.0);
         }
     }
 }

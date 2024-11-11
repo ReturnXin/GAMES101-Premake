@@ -26,7 +26,7 @@ void Renderer::Render(const Scene& scene)
     Vector3f eye_pos(278, 273, -800);
 
     // change the spp value to change sample ammount
-    int spp = 8;
+    int spp = 128;
 	int thread_num = 8;
     int thread_height = scene.height / thread_num;
     std::vector<std::thread> threads(thread_num);
