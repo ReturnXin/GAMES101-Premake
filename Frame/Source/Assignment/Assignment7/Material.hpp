@@ -202,12 +202,12 @@ Vector3f Material::eval(const Vector3f &wi, const Vector3f &wo, const Vector3f &
 
                 fresnel(wi, N, ior, F);
 
-                float roughness = 0.1f;
+                float roughness = 0.25f;
                 auto G_Function = [&](const float& roughness, const Vector3f& wi, const Vector3f& wo, const Vector3f& N) {
                     float A_wi, A_wo;
                     A_wi = (-1 + sqrt(1 + roughness * roughness * pow(tan(acos(dotProduct(wi, N))), 2))) / 2;
                     A_wo = (-1 + sqrt(1 + roughness * roughness * pow(tan(acos(dotProduct(wo, N))), 2))) / 2;
-                    float divisor = A_wi + A_wo;
+                    float divisor = 1 + A_wi + A_wo;
                     if (divisor < 0.001)
                         return 1.f;
                     else
@@ -217,10 +217,10 @@ Vector3f Material::eval(const Vector3f &wi, const Vector3f &wo, const Vector3f &
 
                 auto D_Function = [&](const float& roughness, const Vector3f& h, const Vector3f& N) {
                     float cosThelta = dotProduct(h, N);
-                    float divisor = M_PI * pow(cosThelta * cosThelta * (roughness * roughness - 1) + 1, 2);
+                    float divisor = M_PI * pow(1.0 + cosThelta * cosThelta * (roughness * roughness - 1), 2);
                     if (divisor < 0.001)
                         return 1.f;
-                    else return roughness * roughness / divisor;
+                    else return (roughness * roughness) / divisor;
                     };
                 Vector3f h = normalize(-wi + wo);
                 D = D_Function(roughness, h, N);
@@ -228,7 +228,7 @@ Vector3f Material::eval(const Vector3f &wi, const Vector3f &wo, const Vector3f &
                 Vector3f diffuse = (Vector3f(1.0f) - F) * Kd / M_PI;
                 Vector3f specular;
                 float divisor;
-                divisor = 4 * dotProduct(wo, N) * dotProduct(-wi, N);
+                divisor = 4 * (dotProduct(N, -wi)) * (dotProduct(N, wo));
                 if (divisor < 0.001)
                     specular = Vector3f(1.0f);
                 else

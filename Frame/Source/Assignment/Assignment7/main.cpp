@@ -16,7 +16,7 @@ int main(int argc, char** argv)
 {
 
     // Change the definition here to change resolution
-    Scene scene(200, 200);
+    Scene scene(400, 400);
 
     Material* red = new Material(DIFFUSE, Vector3f(0.0f));
     red->Kd = Vector3f(0.63f, 0.065f, 0.05f);
@@ -36,7 +36,7 @@ int main(int argc, char** argv)
 
     Material* microfacet = new Material(MICROFACET, Vector3f(0.0f));
     microfacet->Ks = Vector3f(0.45, 0.45, 0.45);
-    microfacet->Kd = Vector3f(1.0, 1.0, 1.0);
+    microfacet->Kd = Vector3f(0.3, 0.3, 0.25);
     microfacet->ior = 12.85;
     MeshTriangle shortbox(Utils::PathFromAsset("model/cornellbox/shortbox.obj"), white);
     MeshTriangle tallbox(Utils::PathFromAsset("model/cornellbox/tallbox.obj"), microfacet);
