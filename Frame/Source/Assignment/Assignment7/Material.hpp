@@ -7,7 +7,7 @@
 
 #include "Vector.hpp"
 
-enum MaterialType { DIFFUSE, MICROFACET};
+enum MaterialType { DIFFUSE, MICROFACET, MIRROR };
 
 class Material{
 private:
@@ -153,6 +153,11 @@ Vector3f Material::sample(const Vector3f &wi, const Vector3f &N){
 
             break;
         }
+        case MIRROR:
+        {
+            return reflect(wi, N);
+            break;
+        }
     }
 }
 
@@ -176,6 +181,14 @@ float Material::pdf(const Vector3f &wi, const Vector3f &wo, const Vector3f &N){
                 return 0.0f;
             break;
         }
+        case MIRROR:
+        {
+            if (dotProduct(wo, N) > 0.0f)
+                return 1.0f;
+            else
+                return 0.0f;
+            break;
+        }
     }
 }
 
@@ -188,6 +201,22 @@ Vector3f Material::eval(const Vector3f &wi, const Vector3f &wo, const Vector3f &
             if (cosalpha > 0.0f) {
                 Vector3f diffuse = Kd / M_PI;
                 return diffuse;
+            }
+            else
+                return Vector3f(0.0f);
+            break;
+        }
+        case MIRROR:
+        {
+            float cosalpha = dotProduct(N, wo);
+            if (cosalpha > 0.0f)
+            {
+                float divisor = cosalpha;
+                if (divisor < 0.001) return 0;
+                Vector3f mirror = 1 / divisor;
+                float F;
+                fresnel(wi, N, ior, F);
+                return F * mirror;
             }
             else
                 return Vector3f(0.0f);
@@ -217,10 +246,10 @@ Vector3f Material::eval(const Vector3f &wi, const Vector3f &wo, const Vector3f &
 
                 auto D_Function = [&](const float& roughness, const Vector3f& h, const Vector3f& N) {
                     float cosThelta = dotProduct(h, N);
-                    float divisor = M_PI * pow(1.0 + cosThelta * cosThelta * (roughness * roughness - 1), 2);
+                    float divisor = M_PI * pow(cosThelta * cosThelta * (roughness * roughness - 1) + 1, 2);
                     if (divisor < 0.001)
                         return 1.f;
-                    else return (roughness * roughness) / divisor;
+                    else return roughness * roughness / divisor;
                     };
                 Vector3f h = normalize(-wi + wo);
                 D = D_Function(roughness, h, N);
@@ -228,7 +257,7 @@ Vector3f Material::eval(const Vector3f &wi, const Vector3f &wo, const Vector3f &
                 Vector3f diffuse = (Vector3f(1.0f) - F) * Kd / M_PI;
                 Vector3f specular;
                 float divisor;
-                divisor = 4 * (dotProduct(N, -wi)) * (dotProduct(N, wo));
+                divisor = 4 * dotProduct(wo, N) * dotProduct(-wi, N);
                 if (divisor < 0.001)
                     specular = Vector3f(1.0f);
                 else
@@ -238,6 +267,7 @@ Vector3f Material::eval(const Vector3f &wi, const Vector3f &wo, const Vector3f &
                 return result;
             }
             else return Vector3f(0.0, 0.0, 0.0);
+            break;
         }
     }
 }
